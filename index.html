@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="description" content="QuakeGuard è un'applicazione web che fornisce informazioni in tempo reale sui terremoti in Italia, utilizzando i dati dell'INGV.">
+    <meta name="application-name" content="QuakeGuard">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#212121">
+    <meta name="apple-mobile-web-app-title" content="AR Video">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>AR video visualizer</title>
+    
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="main-container">
+        <div id="ui-start" class="ui-overlay">
+            <div class="ui-content">
+                <h1>AR Video Visualizer</h1>
+                <p>Trasforma le foto in video 3D.</p>
+                <button class="btn-main" onclick="App.startScannerPhase()">INIZIA</button>
+                <div>
+                    <button class="btn-secondary" onclick="App.showInstructions()">Istruzioni</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="ui-scanner" class="ui-overlay hidden">
+            <div id="reader"></div> 
+            <div class="scanner-instructions">Inquadra il QR Code...</div>
+        </div>
+
+        <div id="ui-loading" class="ui-overlay hidden">
+            <div class="ui-content">
+                <div class="spinner"></div>
+                <p>Download del video... [Attendi]</p>
+            </div>
+        </div>
+
+        <div id="ui-instructions" class="ui-overlay hidden" style="background-color: black !important;">
+            <div class="ui-content" style="background-color: black !important; overflow-y: scroll;">
+                <h2>Istruzioni</h2>
+                <ol style="margin-bottom: 20px; border: 1px solid white; border-radius: 10px;">
+                    <li>Clicca su "INIZIA" per avviare la scansione.</li>
+                    <li>Inquadra il QR Code presente sulla foto stampata.</li>
+                    <li>Attendi il caricamento del video associato alla foto.</li>
+                    <li>Visualizza il video in AR inquadrando il simbolino AR sulla foto</li>
+                    <li>Per scansionare un'altra foto, clicca su "Scansiona un'altra foto".</li>
+                </ol>
+                <h3>Configurazione</h3>
+                <ol style="margin-bottom: 20px; border: 1px solid white; border-radius: 10px;">
+                    <li>Carica il tuo video su un servizio di hosting compatibile (consigliato: Dropbox).</li>
+                    <li>Assicurati che il link diretto al video sia accessibile pubblicamente.</li>
+                    <li>Genera un QR Code con il link al video.</li>
+                    <li>Stampa il QR Code e posizionalo sulla foto che vuoi animare.</li>
+                    <li>Posiziona il simbolino AR (un piccolo quadrato con un'icona) sulla foto, in modo che sia visibile quando inquadri la foto con l'app.</li>
+                    <a href="icon.png" download="icon.png">Ottieni il simbolo AR</a>
+                </ol>
+                <button class="btn-secondary" onclick="App.hideInstructions()">Chiudi</button>
+            </div>
+        </div>
+
+
+        <div id="ar-scene-container" class="hidden">
+            <button id="btn-reload" onclick="window.location.reload()">Scansiona un'altra foto</button>
+            <a-scene 
+                mindar-image="imageTargetSrc: ./universal_anchor.mind; autoStart: false; uiScanning: yes;" 
+                embedded 
+                renderer="alpha: true; antialias: true; colorManagement: true; preserveDrawingBuffer: true;" 
+                vr-mode-ui="enabled: false"
+                device-orientation-permission-ui="enabled: false"
+                loading-screen="enabled: false"> 
+                
+                <a-assets>
+                    <video id="ar-video-asset" loop playsinline webkit-playsinline crossorigin="anonymous"></video>
+                </a-assets>
+
+                <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+                <a-entity id="ar-target-entity" mindar-image-target="targetIndex: 0">
+                    <a-video id="video-plane" 
+                            material="src: #ar-video-asset; shader: flat; transparent: false; side: double;" 
+                            position="0 0 0.05" 
+                            rotation="0 0 0" 
+                            width="2" 
+                            height="3.5">
+                    </a-video>
+                </a-entity>
+            </a-scene>
+        </div>
+
+        <div id="ui-debug-sliders" class="hidden">
+            <div class="slider-group">
+                <label>Pos X: <span id="val-pos-x">0</span>m</label>
+                <input type="range" id="slider-pos-x" min="-2" max="2" step="0.05" value="0">
+            </div>
+            <div class="slider-group">
+                <label>Pos Y: <span id="val-pos-y">0</span>m</label>
+                <input type="range" id="slider-pos-y" min="-2" max="2" step="0.05" value="0">
+            </div>
+            <div class="slider-group">
+                <label>Pos Z: <span id="val-pos-z">0.05</span>m</label>
+                <input type="range" id="slider-pos-z" min="0" max="0.5" step="0.01" value="0.05">
+            </div>
+            <div class="slider-group border-top">
+                <label>Rot X: <span id="val-rot-x">0</span>°</label>
+                <input type="range" id="slider-rot-x" min="-180" max="180" step="5" value="0">
+            </div>
+           <div class="slider-group border-top">
+                <label>Larghezza (W): <span id="val-width">2</span></label>
+                <input type="range" id="slider-width" min="0.1" max="5" step="0.05" value="2">
+            </div>
+            <div class="slider-group">
+                <label>Altezza (H): <span id="val-height">3.5</span></label>
+                <input type="range" id="slider-height" min="0.1" max="5" step="0.05" value="3.5">
+            </div>
+            <button class="btn-copy" onclick="App.copyDebugValues()">Copia Valori</button>
+        </div>
+
+        <div id="debug-log"></div>
+    </div> 
+    <script src="script.js"></script>
+</body>
+</html>
